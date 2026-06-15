@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Aplica&#539;ie demonstrativ&#259;: Criptosistemul Rabin</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="script.js" defer></script>
+</head>
+<body>
+  <div class="app-shell">
+    <header class="app-header">
+      <div class="header-copy">
+        <p class="eyebrow">Demo local pentru lucrarea de licen&#539;&#259; Biliu&#539;&#259; Elisa-Adelina</p>
+        <h1>Aplica&#539;ie demonstrativ&#259;: Criptosistemul Rabin</h1>
+        <p class="lead">
+          Criptosistemul Rabin folose&#537;te formula <strong>c = m<sup>2</sup> mod N</strong>,
+          unde <strong>N = p &middot; q</strong>. Cheia public&#259; este <strong>N</strong>, iar
+          trapdoor-ul este factorizarea lui <strong>N</strong>.
+        </p>
+      </div>
+
+      <div class="formula-board" aria-label="Formule Rabin">
+        <div class="formula-tile">
+          <span>Cheie public&#259;</span>
+          <strong>N = p &middot; q</strong>
+        </div>
+        <div class="formula-tile">
+          <span>Criptare</span>
+          <strong>c = m<sup>2</sup> mod N</strong>
+        </div>
+        <div class="formula-tile">
+          <span>Trapdoor</span>
+          <strong>(p, q)</strong>
+        </div>
+      </div>
+    </header>
+
+    <main class="workspace">
+      <section class="panel setup-panel" aria-labelledby="setup-title">
+        <div class="section-heading">
+          <span class="section-number">1</span>
+          <div>
+            <h2 id="setup-title">Alegerea datelor ini&#539;iale</h2>
+            <p>Alege dac&#259; porne&#537;ti doar cu cheia public&#259; sau cu trapdoor-ul complet.</p>
+          </div>
+        </div>
+
+        <fieldset class="choice-grid">
+          <legend class="sr-only">Tipul datelor ini&#539;iale</legend>
+          <label class="choice-card" for="mode-public">
+            <input type="radio" id="mode-public" name="key-mode" value="public" checked>
+            <span>
+              <strong>Introduc doar cheia public&#259; N</strong>
+              <small>Pot cripta, dar decriptarea r&#259;m&#226;ne indisponibil&#259;.</small>
+            </span>
+          </label>
+
+          <label class="choice-card" for="mode-trapdoor">
+            <input type="radio" id="mode-trapdoor" name="key-mode" value="trapdoor">
+            <span>
+              <strong>Introduc trapdoor-ul p &#537;i q</strong>
+              <small>Pot cripta &#537;i decripta folosind cele patru r&#259;d&#259;cini.</small>
+            </span>
+          </label>
+        </fieldset>
+
+        <div class="input-grid" id="public-fields">
+          <label class="field">
+            <span>Cheia public&#259; N</span>
+            <input id="public-n" type="text" inputmode="numeric" autocomplete="off" placeholder="Exemplu: 77">
+          </label>
+        </div>
+
+        <div class="input-grid" id="trapdoor-fields" hidden>
+          <label class="field">
+            <span>p</span>
+            <input id="secret-p" type="text" inputmode="numeric" autocomplete="off" placeholder="Exemplu: 7">
+          </label>
+
+          <label class="field">
+            <span>q</span>
+            <input id="secret-q" type="text" inputmode="numeric" autocomplete="off" placeholder="Exemplu: 11">
+          </label>
+        </div>
+
+        <fieldset class="method-switch" aria-labelledby="root-method-title">
+          <legend id="root-method-title">Metod&#259; de decriptare</legend>
+          <div class="segmented-options">
+            <label class="segment-option" for="root-mode-simple">
+              <input type="radio" id="root-mode-simple" name="root-mode" value="simple" checked>
+              <span>Mod simplu: p,q &#8801; 3 mod 4</span>
+            </label>
+            <label class="segment-option" for="root-mode-general">
+              <input type="radio" id="root-mode-general" name="root-mode" value="general">
+              <span>Mod general: orice prime impare</span>
+            </label>
+          </div>
+          <p class="method-note" id="root-mode-explanation">
+            Acest mod este folosit &#238;n lucrare pentru c&#259; permite formula simpl&#259;
+            r = c<sup>((p+1)/4)</sup> mod p.
+          </p>
+        </fieldset>
+
+        <button class="primary-button" type="button" id="set-data">Seteaz&#259; datele</button>
+        <div class="feedback" id="setup-feedback" role="status" aria-live="polite"></div>
+      </section>
+
+      <section class="panel current-panel" aria-labelledby="current-title">
+        <div class="section-heading">
+          <span class="section-number">2</span>
+          <div>
+            <h2 id="current-title">Date curente</h2>
+            <p>Starea cheilor folosite de aplica&#539;ie.</p>
+          </div>
+        </div>
+
+        <dl class="summary-grid">
+          <div class="summary-item">
+            <dt>N</dt>
+            <dd id="current-n">Nesetat</dd>
+          </div>
+          <div class="summary-item">
+            <dt>Metod&#259; de decriptare</dt>
+            <dd id="current-root-mode">Mod simplu</dd>
+          </div>
+          <div class="summary-item" id="current-factorization-wrapper" hidden>
+            <dt>Factorizare N</dt>
+            <dd id="current-factorization">Nesetat</dd>
+          </div>
+          <div class="summary-item" id="current-pq-wrapper" hidden>
+            <dt>Trapdoor p &#537;i q</dt>
+            <dd id="current-pq">Nesetat</dd>
+          </div>
+          <div class="summary-item">
+            <dt>Decriptare</dt>
+            <dd id="decrypt-status">Indisponibil&#259;</dd>
+          </div>
+        </dl>
+      </section>
+
+      <section class="panel theory-panel" aria-labelledby="theory-title">
+        <div class="section-heading compact">
+          <span class="section-number">i</span>
+          <div>
+            <h2 id="theory-title">Explica&#539;ii afi&#537;ate</h2>
+          </div>
+        </div>
+
+        <ul class="theory-list">
+          <li>Cheia public&#259; este N. Oricine cunoa&#537;te N poate cripta.</li>
+          <li>&#206;n modul simplu, presupunem p &#8801; q &#8801; 3 mod 4, caz folosit &#238;n lucrare pentru a calcula direct r&#259;d&#259;cinile p&#259;trate.</li>
+          <li>&#206;n modul general, folosim algoritmul Tonelli-Shanks pentru a calcula r&#259;d&#259;cini p&#259;trate modulo un prim impar oarecare.</li>
+          <li>&#206;n ambele moduri, trapdoor-ul este factorizarea lui N, adic&#259; perechea p &#537;i q.</li>
+          <li>Decriptarea Rabin produce, &#238;n general, patru r&#259;d&#259;cini p&#259;trate modulo N, deci patru candida&#539;i pentru mesajul ini&#539;ial.</li>
+          <li>Aceast&#259; aplica&#539;ie folose&#537;te numere mici pentru scop didactic. &#206;n practic&#259;, p &#537;i q trebuie s&#259; fie foarte mari.</li>
+        </ul>
+      </section>
+
+      <section class="panel action-panel" aria-labelledby="action-title">
+        <div class="section-heading">
+          <span class="section-number">3</span>
+          <div>
+            <h2 id="action-title">Ac&#539;iune</h2>
+            <p>Op&#539;iunile de decriptare sunt active doar c&#226;nd trapdoor-ul este cunoscut.</p>
+          </div>
+        </div>
+
+        <label class="field">
+          <span>Alege opera&#539;ia</span>
+          <select id="action-select" disabled>
+            <option value="encryptNumber">Criptare num&#259;r</option>
+            <option value="decryptNumber" data-requires-trapdoor="true">Decriptare num&#259;r</option>
+            <option value="encryptText">Criptare text</option>
+            <option value="decryptText" data-requires-trapdoor="true">Decriptare text</option>
+          </select>
+        </label>
+        <p class="action-hint" id="action-hint">Seteaz&#259; mai &#238;nt&#226;i datele ini&#539;iale.</p>
+      </section>
+
+      <section class="panel input-panel" aria-labelledby="input-title">
+        <div class="section-heading">
+          <span class="section-number">4</span>
+          <div>
+            <h2 id="input-title">Input mesaj / criptotext</h2>
+            <p id="input-help">Zona de input se activeaz&#259; dup&#259; setarea datelor.</p>
+          </div>
+        </div>
+
+        <label class="field">
+          <span id="input-label">Mesaj numeric m</span>
+          <textarea id="action-input" rows="5" disabled></textarea>
+        </label>
+
+        <button class="primary-button" type="button" id="run-action" disabled>Ruleaz&#259; ac&#539;iunea</button>
+      </section>
+
+      <section class="panel results-panel" aria-labelledby="results-title">
+        <div class="section-heading">
+          <span class="section-number">5</span>
+          <div>
+            <h2 id="results-title">Rezultate</h2>
+            <p>Calculele, formulele &#537;i candida&#539;ii apar aici.</p>
+          </div>
+        </div>
+
+        <div class="results-stack" id="results">
+          <div class="empty-state">
+            Seteaz&#259; datele ini&#539;iale &#537;i ruleaz&#259; o ac&#539;iune pentru a vedea rezultatele.
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+</body>
+</html>
